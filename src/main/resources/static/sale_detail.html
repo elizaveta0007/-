@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Детали продажи</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="index.html">Библиотека</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav"
+                aria-expanded="false" aria-label="Переключить навигацию">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="books.html">Книги</a></li>
+                <li class="nav-item"><a class="nav-link" href="sales.html">Продажи</a></li>
+                <li class="nav-item"><a class="nav-link" href="users.html">Пользователи</a></li>
+                <li class="nav-item" id="loginNav"><a class="nav-link" href="login.html">Вход</a></li>
+                <li class="nav-item" id="registerNav"><a class="nav-link" href="register.html">Регистрация</a></li>
+                <li class="nav-item d-none" id="logoutNav"><a class="nav-link" href="#" onclick="logout()">Выход</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<!-- Основной контент -->
+<div class="container">
+    <h1 class="mb-4">Детали продажи</h1>
+    <div id="saleDetails" class="border p-3"></div>
+</div>
+<script src="api.js"></script>
+<script>
+    const id = new URLSearchParams(window.location.search).get("id");
+
+    async function loadSaleDetails() {
+      try {
+        const saleRes = await authorizedFetch(`/api/sales/${id}`);
+        if (saleRes.status === 403) {
+          alert('У вас нет прав для просмотра продажи.');
+          return;
+        }
+
+        const sale = await saleRes.json();
+
+        // Параллельно получаем книгу и пользователя
+        const [bookRes, userRes] = await Promise.all([
+          authorizedFetch(`/api/books/${sale.bookId}`),
+          authorizedFetch(`/api/users/${sale.userId}`)
+        ]);
+
+        const book = bookRes.ok ? await bookRes.json() : null;
+        const user = userRes.ok ? await userRes.json() : null;
+
+        const detailsHtml = `
+          <p><strong>ID:</strong> ${sale.id}</p>
+          <p><strong>Книга:</strong> ${book ? `<a href="book_detail.html?id=${book.id}">${book.title}</a>` : `ID: ${sale.bookId}`}</p>
+          <p><strong>Пользователь:</strong> ${user ? user.username : `ID: ${sale.userId}`}</p>
+          <p><strong>Дата:</strong> ${sale.date || "–"}</p>
+        `;
+
+        document.getElementById("saleDetails").innerHTML = detailsHtml;
+      } catch (error) {
+        console.error(error);
+        alert("Ошибка при загрузке данных продажи.");
+      }
+    }
+
+    loadSaleDetails();
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'index.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hasToken = !!localStorage.getItem('token');
+      document.getElementById('loginNav').style.display = hasToken ? 'none' : 'block';
+      document.getElementById('registerNav').style.display = hasToken ? 'none' : 'block';
+      document.getElementById('logoutNav').classList.toggle('d-none', !hasToken);
+    });
+</script>
+</body>
+</html>

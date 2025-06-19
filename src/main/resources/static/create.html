@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создать книгу</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">Библиотека</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Переключить навигацию">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="books.html">Книги</a></li>
+        <li class="nav-item"><a class="nav-link" href="sales.html">Продажи</a></li>
+        <li class="nav-item"><a class="nav-link" href="users.html">Пользователи</a></li>
+        <li class="nav-item" id="loginNav"><a class="nav-link" href="login.html">Вход</a></li>
+        <li class="nav-item" id="registerNav"><a class="nav-link" href="register.html">Регистрация</a></li>
+        <li class="nav-item d-none" id="logoutNav"><a class="nav-link" href="#" onclick="logout()">Выход</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<!-- Основной контент -->
+<div class="container">
+  <h1>Создать новую книгу</h1>
+  <form id="createForm">
+    <div class="mb-3">
+      <input name="title" class="form-control" placeholder="Название" required>
+    </div>
+    <div class="mb-3">
+      <input name="author" class="form-control" placeholder="Автор" required>
+    </div>
+    <div class="mb-3">
+      <input type="number" name="price" id="price" class="form-control" placeholder="Цена" min="1" step="0.01" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Создать</button>
+    <a href="books.html" class="btn btn-secondary ms-2">Назад</a>
+  </form>
+</div>
+
+<script src="api.js"></script>
+<script>
+  document.getElementById('createForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+      title: form.title.value,
+      author: form.author.value,
+      price: parseFloat(form.price.value)
+    };
+
+    authorizedFetch('/api/books', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(res => {
+        if (!res.ok) {
+          if (res.status === 403) {
+            alert('У вас нет прав для добавления книг.');
+          }
+        }
+        return res.json();
+      })
+      .then(book => window.location.href = `detail.html?id=${book.id}`)
+  });
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = 'index.html';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const hasToken = !!localStorage.getItem('token');
+    const loginNav = document.getElementById('loginNav');
+    const registerNav = document.getElementById('registerNav');
+    const logoutNav = document.getElementById('logoutNav');
+
+    if (loginNav) loginNav.style.display = hasToken ? 'none' : 'block';
+    if (registerNav) registerNav.style.display = hasToken ? 'none' : 'block';
+    if (logoutNav) logoutNav.classList.toggle('d-none', !hasToken);
+  });
+</script>
+</body>
+</html>

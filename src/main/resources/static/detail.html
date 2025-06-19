@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Детали книги</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">Библиотека</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Переключить навигацию">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="books.html">Книги</a></li>
+        <li class="nav-item"><a class="nav-link" href="sales.html">Продажи</a></li>
+        <li class="nav-item"><a class="nav-link" href="users.html">Пользователи</a></li>
+        <li class="nav-item" id="loginNav"><a class="nav-link" href="login.html">Вход</a></li>
+        <li class="nav-item" id="registerNav"><a class="nav-link" href="register.html">Регистрация</a></li>
+        <li class="nav-item d-none" id="logoutNav"><a class="nav-link" href="#" onclick="logout()">Выход</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<!-- Основной контент -->
+<div class="container">
+  <h1 id="title">Загрузка...</h1>
+  <p id="author" class="text-muted"></p>
+  <p id="price"></p>
+  <a id="editLink" class="btn btn-warning" href="#">Редактировать</a>
+  <button class="btn btn-danger ms-2" onclick="deleteBook()">Удалить</button>
+  <a href="books.html" class="btn btn-secondary ms-2">Назад</a>
+</div>
+<script src="api.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+
+  authorizedFetch(`api/books/${id}`)
+    .then(res => {
+      if (res.status === 404) throw new Error('Книга не найдена');
+      return res.json();
+    })
+    .then(book => {
+      document.getElementById('title').textContent = book.title;
+      document.getElementById('author').textContent = 'Автор: ' + book.author;
+      document.getElementById('price').textContent = 'Цена: ' + book.price;
+      document.getElementById('editLink').href = `edit.html?id=${book.id}`;
+    })
+    .catch(() => alert('Книга не найдена'));
+
+  function deleteBook() {
+    if (!confirm('Удалить книгу?')) return;
+    authorizedFetch(`api/books/${id}`, { method: 'DELETE' })
+        .then(res => {
+          if (res.status === 403) {
+            alert('У вас нет прав для удаления книги.');
+          }
+          return res.json();
+      })
+      .then(() => window.location.href = 'books.html')
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = 'index.html';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const hasToken = !!localStorage.getItem('token');
+    document.getElementById('loginNav').style.display = hasToken ? 'none' : 'block';
+    document.getElementById('registerNav').style.display = hasToken ? 'none' : 'block';
+    document.getElementById('logoutNav').classList.toggle('d-none', !hasToken);
+  });
+</script>
+</body>
+</html>
